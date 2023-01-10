@@ -8,10 +8,10 @@
 			Back: VideoChip0, CPU0, ROM, FlashMemory0
 		
 		Symbolic Legend for function's dependencies
-			-- (inherited variables) :: [hardware componets] :: {inherited functions} :: <assests>
+			-- (inherited variables) :: [hardware components] :: {inherited functions} :: <assets>
 		Tip
 			Edit CPU0.lua in editor of choice, then copy/paste into Retro Gadgets to simulate
-				A RetroGadets Update will be making improvements to the editor experience 
+				A Retro Gadgets Update will be making improvements to the editor experience 
 
 ]]--
 
@@ -29,33 +29,29 @@ local btn1: LedButton = gdt.LedButton1
 local led0: Led = gdt.Led0
 local ledS0: LedStrip = gdt.LedStrip0
 --]	Connect Screen to VideoChip and related variables [--
-screen0.VideoChip = video0
+screen0.VideoChip = video0 		--can be set in UI
 local maxPixel: number = 64		--for a square
 local playerPixels: number = 8	--for a square
-local center: number = (maxPixel - playerPixels) / 2 - 1 	-- (64/2) - 1
+local center: number = (maxPixel - playerPixels) / 2 - 1 	-- (64-8)/2 - 1
 --]	Assets [--
 local font: SpriteSheet = rom.System.SpriteSheets["StandardFont"]
 local player: SpriteSheet = rom.User.SpriteSheets["object.png"]
 local border: SpriteSheet = rom.User.SpriteSheets["border.png"]
 --]	Player object controller variables [--
-local playerXpos:number, playerYpos:number = center, center		--inital position of player
+local playerXpos:number, playerYpos:number = center, center		--initial position of player
 local playerSpeed = 1
---]	Game Engine controller variables [--
-local tick: number = 0
-local autoSave_freq: number = 60
-local globalTick: number = 0
 
 --]	Update (Main) function at each tick [--
 function update()
 	video0:Clear(color.black)	--Upon update, clear screen (refresh)
-	playerRecenter()			--Upon button press, recenter player
-	playerSetSpeed()			--Upon button press, change players movement speed
-	playerControl()				--Upon Joystick input, update players positition
-	printPosition()				--Use LCD as serial to print player characteristics
-	player_n_boundry()			--Upon intersection of player and boundry, do...
-	drawBoundry()				--Draw boarder sprite :: should go last, after all changes to var's
-	drawPlayer()				--Draw player sprite
-	detectBoundry()				--Upon player to boundry proximity, turn on or off LED
+	playerRecenter()					--Upon button press, recenter player
+	playerSetSpeed()					--Upon button press, change players movement speed
+	playerControl()						--Upon Joystick input, update players position
+	printPosition()						--Use LCD as serial to print player characteristics
+	player_n_boundary()				--Upon intersection of player and boundary, do...
+	drawBoundary()						--Draw border sprite :: should go last, after all changes to var's
+	drawPlayer()				  		--Draw player sprite
+	detectBoundary()					--Upon player to boundary proximity, turn on or off LED
 --Main
 end
 
@@ -94,13 +90,13 @@ end
 --]	Control 360 degrees of movement for the Player object [--
 function playerControl()	-- (playerXpos,playerYpos,playerSpeed) :: [stick0] :: {getAngle(),getMagnitude()}
 	--Get current joystick coordinates direction(angle) and speed(magnitude)
-	local direction: number = getAngle(false, stick0.X, stick0.Y)	--the angle between the hypotenous of X,Y
-	local speed: number = getMagnitude(stick0.X,stick0.Y)	--the hypotenous of the joysticks coordinates
-	local scale: number = playerSpeed 						--velocity(speed) scaler
-	local hypNew: number = scale * speed / 100				--new hypotenous
+	local direction: number = getAngle(false, stick0.X, stick0.Y)	--the angle between the hypotenuse of X,Y
+	local speed: number = getMagnitude(stick0.X,stick0.Y)	--the hypotenuse of the joysticks coordinates
+	local scale: number = playerSpeed 						      --velocity(speed) scaler
+	local hypNew: number = scale * speed / 100				  --new hypotenuse
 	local xNew: number = math.cos(direction)*hypNew			--new x coordinate (rect coordinates)
 	local yNew: number = math.sin(direction)*hypNew			--new y coordinate (rect coordinates)
-	--Update players postion given joysticks angle and value of X,Y coordinates
+	--Update players position given joysticks angle and value of X,Y coordinates
 	playerXpos = playerXpos + xNew
 	playerYpos = playerYpos - yNew
 --No Return
@@ -108,7 +104,7 @@ end
 
 --]	Print the Player objects and Joystick coordinate characteristics onto the LCD [--
 function printPosition()	-- (playerXpos,playerYpos) :: [stick0,display0] :: {getAngle(),getMagnitude()}
-	--Each formated to print on a single LCD line
+	--Each formatted to print on a single LCD line
 	local formatMagnitude: string = string.format("mag = %6.2f    ", getMagnitude(stick0.X,stick0.Y))
 	local formatAngle: string = string.format("angle = %6.2f  ", getAngle(true,stick0.X,stick0.Y)) --degrees
 	local formatCoordinates: string = string.format("x,y = %+3i,%+3i", playerXpos, playerYpos)
@@ -119,8 +115,8 @@ function printPosition()	-- (playerXpos,playerYpos) :: [stick0,display0] :: {get
 --No Return
 end
 
---]	Determine what happens when Player object meets the Boundry :: 3 example methods to handle this [--
-function player_n_boundry()		-- (maxPixel,playerPixels,playerXpos,playerYpos)
+--]	Determine what happens when Player object meets the Boundary  :: 3 example methods [--
+function player_n_boundary()		-- (maxPixel,playerPixels,playerXpos,playerYpos)
 	--Method 0: No Bounds then comment out both Method 1 and 2 (Ctrl+Alt+/)
 	--[[--Method 1: Bounds that roll-over the player object to other side when half of player crosses
 		local minVal, maxVal = 1 - playerPixels / 2, maxPixel - playerPixels - 1
@@ -128,7 +124,7 @@ function player_n_boundry()		-- (maxPixel,playerPixels,playerXpos,playerYpos)
 		if playerXpos > maxVal then playerXpos = minVal end
 		if playerYpos <= minVal then playerYpos = maxVal end
 		if playerYpos > maxVal then playerYpos = minVal end--]]
-	--Method 2: Bounds that do not allow movement across boarder
+	--Method 2: Bounds that do not allow movement across border
 	local minVal: number, maxVal: number = 1, maxPixel - playerPixels - 1
 	if playerXpos <= minVal then playerXpos = minVal end
 	if playerXpos > maxVal then playerXpos = maxVal end
@@ -137,8 +133,8 @@ function player_n_boundry()		-- (maxPixel,playerPixels,playerXpos,playerYpos)
 --No Return
 end
 
---] Draw the Boarder sprite onto scree [--
-function drawBoundry()		-- <border> 
+--] Draw the Border sprite onto scree [--
+function drawBoundary()		-- <border> 
 	video0:DrawSprite(vec2(0,0), border, 0, 0, color.white, color.clear)
 --No Return
 end
@@ -149,10 +145,10 @@ function drawPlayer()		-- (playerXpos,playerYpos) :: <player>
 --No Return
 end
 
---] Proximity Detector between player and boundry for LED [--
-function detectBoundry()	-- (playerPixels,maxPixel,playerXpos,playerYpos) :: [led0]
+--] Proximity Detector between player and boundary for LED [--
+function detectBoundary()	-- (playerPixels,maxPixel,playerXpos,playerYpos) :: [led0]
 	local minVal: number, maxVal: number = playerPixels / 2, maxPixel - 3 * playerPixels / 2 - 1
-	--Detect when player is within half of its pixel size away from the boundry
+	--Detect when player is within half of its pixel size away from the boundary
 	if playerXpos <= minVal then led0.State = true
 	elseif playerXpos > maxVal then led0.State = true
 	elseif playerYpos <= minVal then led0.State = true
@@ -161,7 +157,7 @@ function detectBoundry()	-- (playerPixels,maxPixel,playerXpos,playerYpos) :: [le
 --No Return
 end
 
---Utility Functions---------------------------------------------------------------------------------------------------------------
+--Utility Functions-----------------------------------------------------------------------------
 
 --] Get the angle in radians or degrees given x,y coordinates [--
 function getAngle(unit:boolean, xVal:number, yVal:number)
